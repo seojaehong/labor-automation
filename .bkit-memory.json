@@ -1,0 +1,18 @@
+{
+  "projectName": "labor-automation",
+  "currentFeature": "labor-contract-generator",
+  "phase": "plan",
+  "createdAt": "2026-01-30",
+  "updatedAt": "2026-01-30",
+  "features": {
+    "labor-contract-generator": {
+      "phase": "plan",
+      "planPath": "docs/01-plan/features/labor-contract-generator.plan.md",
+      "designPath": null,
+      "analysisPath": null,
+      "reportPath": null,
+      "matchRate": null,
+      "iterations": 0
+    }
+  }
+}
