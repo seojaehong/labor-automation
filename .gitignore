@@ -11,3 +11,10 @@ Thumbs.db
 # Editor
 .vscode/
 .idea/
+
+# Local legal case data (sensitive)
+cases/
+!cases/.gitkeep
+tmp-import/
+MATTERS/
+!MATTERS/.gitkeep

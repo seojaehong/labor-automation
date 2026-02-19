@@ -1,0 +1,35 @@
+{
+  "version": "2.0",
+  "lastUpdated": "2026-02-20T00:00:00.000Z",
+  "activeFeatures": ["legal-ai-hybrid-workflow"],
+  "primaryFeature": "legal-ai-hybrid-workflow",
+  "features": {
+    "legal-ai-hybrid-workflow": {
+      "phase": "check",
+      "planPath": "docs/01-plan/features/legal-ai-hybrid-workflow.plan.md",
+      "designPath": "docs/02-design/features/legal-ai-hybrid-workflow.design.md",
+      "analysisPath": null,
+      "reportPath": null,
+      "matchRate": null,
+      "iterations": 0
+    }
+  },
+  "pipeline": {
+    "currentPhase": 1,
+    "level": "Dynamic",
+    "phaseHistory": []
+  },
+  "session": {
+    "startedAt": "2026-02-20T00:00:00.000Z",
+    "onboardingCompleted": true,
+    "lastActivity": "2026-02-20T00:00:00.000Z"
+  },
+  "history": [
+    {
+      "action": "plan-updated",
+      "feature": "legal-ai-hybrid-workflow",
+      "timestamp": "2026-02-20T00:00:00.000Z",
+      "note": "v2 Plan: /chrome integration + 바이브코딩 스펙 + Process B 참조 반영"
+    }
+  ]
+}
