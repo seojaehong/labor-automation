@@ -1,10 +1,10 @@
 # 테스트 결과보고서: Legal AI Hybrid Workflow
 
 > **Feature**: legal-ai-hybrid-workflow
-> **테스트 일시**: 2026-02-20 (최종 갱신 19:30 KST)
+> **테스트 일시**: 2026-02-20 (최종 갱신 20:30 KST)
 > **테스트 환경**: Windows 11 Home, Python 3.13.3, pytest 9.0.2, Claude Code v2.1.47
 > **테스트 범위**: Process A (/chrome 3플랫폼) + Process B (로컬 허브) 전체
-> **최신 커밋**: `1d6a8a6` — P0/P1 완료 (HWPX E2E + watch_inbox 실운영 + Phase4 문서)
+> **최신 커밋**: `817e931` — 샘플 HWPX 템플릿 추가 + 116 passed
 
 ---
 
@@ -38,7 +38,7 @@ Design v2 §12에 정의된 단위 테스트 및 통합 테스트를 실행하�
 | ID | 대상 | 입력 | 기대 결과 | 실제 결과 | 판정 |
 |----|------|------|-----------|-----------|------|
 | UT-01 | scaffold_hub.py | matter_id="TEST-E2E-001" | 7개 폴더 + 5개 템플릿 파일 생성 | 7개 폴더 + 5개 파일 생성 확인 | **PASS** |
-| UT-02 | (엘박스 검색) | - | - | /chrome 별도 세션 필요 | **PENDING** |
+| UT-02 | 엘박스 /chrome 검색 | 쿼리: "부당해고 구제신청" | 판례 목록 반환 | 3플랫폼 E2E 완료 (IT-01, IT-04 증적 참조) | **PASS** |
 | UT-03 | build_matter_pack.py | 한국어 판례 PDF | 텍스트 추출 + 사건번호/법원 감지 | `2022다54321`, `대법원` 정확 감지 | **PASS** |
 | UT-04 | IRAC 프롬프트 | - | 4요소 구조 완비 | templates/irac_prompt.md 생성 완료 | **PASS** |
 | UT-05 | render_hwpx.py | 템플릿 + JSON 데이터 | placeholder 치환 완료 | `홍길동`, `주식회사 OO운수` 등 정확 치환, `{{` 잔여 없음 | **PASS** |
@@ -62,8 +62,9 @@ Design v2 §12에 정의된 단위 테스트 및 통합 테스트를 실행하�
 
 ## 4-1. render_docx.py 테이블/각주 pytest 결과
 
-> 커밋 `1d6a8a6` 기준, **39 passed** / 0 failed
+> 커밋 `817e931` 기준, **116 passed** / 0 failed
 > - render_docx: 18개 / render_hwpx: 14개 / prepare_case_data: 7개
+> - build_matter_pack: 36개 / chrome_log: 12개 / scaffold_hub: 16개 / watch_inbox: 13개
 
 | 테스트 클래스 | 테스트명 | 판정 |
 |---------------|----------|------|
@@ -86,7 +87,7 @@ Design v2 §12에 정의된 단위 테스트 및 통합 테스트를 실행하�
 | TestEdgeCases | test_pipe_in_code_not_parsed_as_table | PASS |
 | TestEdgeCases | test_colon_alignment_separators | PASS |
 
-**코드 트랙 상태**: 39 pass / 0 fail — 게이트 충족
+**코드 트랙 상태**: 116 pass / 0 fail — 게이트 충족
 
 ## 5. 통합 테스트 결과
 
@@ -159,7 +160,7 @@ Design v2 §12에 정의된 단위 테스트 및 통합 테스트를 실행하�
 
 Process B (로컬 허브) 파이프라인은 **모든 단위 테스트를 통과**하며, IT-03 통합 테스트(PDF → 근거카드 → IRAC 초안 → DOCX/hwpx)도 정상 동작 확인됨.
 
-Process A (/chrome)는 **3플랫폼 E2E 검증 완료** (부당해고 구제신청 + 임금체불 진정 2건). Process B 로컬 허브 전체 파이프라인 39 passed.
+Process A (/chrome)는 **3플랫폼 E2E 검증 완료** (부당해고 구제신청 + 임금체불 진정 2건). Process B 로컬 허브 전체 파이프라인 **116 passed** (7개 모듈 전체 커버리지).
 
 ### 개발원칙
 
