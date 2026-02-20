@@ -1,9 +1,10 @@
 # 테스트 결과보고서: Legal AI Hybrid Workflow
 
 > **Feature**: legal-ai-hybrid-workflow
-> **테스트 일시**: 2026-02-20
-> **테스트 환경**: Windows 11 Home, Claude Code v2.1.47
+> **테스트 일시**: 2026-02-20 (최종 갱신)
+> **테스트 환경**: Windows 11 Home, Python 3.13.3, pytest 9.0.2, Claude Code v2.1.47
 > **테스트 범위**: Process B (로컬 허브) + Process A 환경 검증
+> **최신 커밋**: `c4f9664` — render_docx.py 테이블/각주 지원 + 개발원칙 수립
 
 ---
 
@@ -59,6 +60,33 @@ Design v2 §12에 정의된 단위 테스트 및 통합 테스트를 실행하�
 | **Bold** 인라인 파싱 | `**text**` → Bold | 서면 통지, 정당한 이유 등 정확 파싱 | PASS |
 | 문단 수 | - | 34개 | 정상 |
 
+## 4-1. render_docx.py 테이블/각주 pytest 결과
+
+> 커밋 `c4f9664` 기준, 18 passed / 0 failed (0.28s)
+
+| 테스트 클래스 | 테스트명 | 판정 |
+|---------------|----------|------|
+| TestAddTable | test_basic_table | PASS |
+| TestAddTable | test_header_row_is_bold | PASS |
+| TestAddTable | test_single_column_table | PASS |
+| TestAddTable | test_bold_in_cell | PASS |
+| TestAddTable | test_empty_cell | PASS |
+| TestCollectFootnoteDefs | test_basic_definition | PASS |
+| TestCollectFootnoteDefs | test_no_definitions | PASS |
+| TestAddFootnoteParagraph | test_text_without_footnotes | PASS |
+| TestAddFootnoteParagraph | test_footnote_ref_becomes_superscript | PASS |
+| TestAddFootnoteParagraph | test_multiple_footnotes | PASS |
+| TestRenderMarkdownTable | test_table_parsed_in_markdown | PASS |
+| TestRenderMarkdownTable | test_text_before_and_after_table | PASS |
+| TestRenderMarkdownTable | test_multiple_tables | PASS |
+| TestRenderMarkdownFootnote | test_footnote_in_paragraph | PASS |
+| TestRenderMarkdownFootnote | test_footnote_section_appended | PASS |
+| TestEdgeCases | test_separator_only_row_ignored | PASS |
+| TestEdgeCases | test_pipe_in_code_not_parsed_as_table | PASS |
+| TestEdgeCases | test_colon_alignment_separators | PASS |
+
+**코드 트랙 상태**: 18 pass / 0 fail — 게이트 충족
+
 ## 5. 통합 테스트 결과
 
 | ID | 시나리오 | 결과 | 비고 |
@@ -111,13 +139,14 @@ Design v2 §12에 정의된 단위 테스트 및 통합 테스트를 실행하�
 |---|------|------|
 | 1 | `scripts/legal-hub/scaffold_hub.py` | 기존 (정상 동작) |
 | 2 | `scripts/legal-hub/build_matter_pack.py` | 기존 (정상 동작) |
-| 3 | `scripts/legal-hub/render_docx.py` | 보강 (**bold** 파싱 추가) |
+| 3 | `scripts/legal-hub/render_docx.py` | 보강 (테이블/각주/bold 파싱) |
 | 4 | `scripts/legal-hub/watch_inbox.py` | **신규** (watchdog 실시간 감시) |
 | 5 | `scripts/legal-hub/render_hwpx.py` | **신규** (hwpx 템플릿 렌더링) |
 | 6 | `scripts/legal-hub/requirements.txt` | 보강 (watchdog 추가) |
 | 7 | `templates/irac_prompt.md` | **신규** (IRAC 분석 프롬프트) |
 | 8 | `templates/rescue_application_data.example.json` | **신규** (hwpx 데이터 예시) |
 | 9 | `templates/README.md` | **신규** (템플릿 사용 가이드) |
+| 10 | `scripts/legal-hub/test_render_docx.py` | **신규** (render_docx 18개 테스트) |
 
 ## 9. 결론 및 권고사항
 
@@ -126,6 +155,10 @@ Design v2 §12에 정의된 단위 테스트 및 통합 테스트를 실행하�
 Process B (로컬 허브) 파이프라인은 **모든 단위 테스트를 통과**하며, IT-03 통합 테스트(PDF → 근거카드 → IRAC 초안 → DOCX/hwpx)도 정상 동작 확인됨.
 
 Process A (/chrome)는 **환경 준비 완료** (Claude Code v2.1.47, Native Messaging Host 등록) 상태이며, 별도 세션에서 실제 연결 테스트가 필요함.
+
+### 개발원칙
+
+`CLAUDE.md`가 개발원칙 문서를 겸함 (TDD 필수, Simplicity First, Surgical Changes, 커밋 규칙, 테스트 규칙 등 포함). 별도 파일 불필요.
 
 ### 권고사항
 
