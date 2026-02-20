@@ -9,6 +9,11 @@ import sys
 import time
 from pathlib import Path
 
+# Windows cp949/cp1252 터미널에서 이모지 출력 시 UnicodeEncodeError 방지
+if sys.stdout.encoding and sys.stdout.encoding.lower().replace("-", "") not in ("utf8", "utf16"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")  # type: ignore[union-attr]
+    sys.stderr.reconfigure(encoding="utf-8", errors="replace")  # type: ignore[union-attr]
+
 from watchdog.events import FileCreatedEvent, FileSystemEventHandler
 from watchdog.observers import Observer
 
