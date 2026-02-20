@@ -36,10 +36,14 @@ labor-automation/
 │   │   ├── build_matter_pack.py  # 사건 자료 팩 빌드
 │   │   ├── watch_inbox.py   # 수신함 감시 (watchdog)
 │   │   ├── chrome_log.py    # /chrome 세션 감사 로거
-│   │   └── test_render_docx.py   # 테스트
+│   │   ├── prepare_case_data.py  # IRAC 마크다운 → case data JSON 주입
+│   │   ├── test_render_docx.py   # render_docx 테스트 (18개)
+│   │   ├── test_render_hwpx.py   # render_hwpx 테스트 (14개)
+│   │   └── test_prepare_case_data.py  # prepare_case_data 테스트 (7개)
 │   └── legal-workflow/      # PowerShell 스크립트
 │       ├── New-LegalCase.ps1     # 사건 생성
-│       └── Import-LegalExports.ps1  # 플랫폼 내보내기 가져오기
+│       ├── Import-LegalExports.ps1  # 플랫폼 내보내기 가져오기
+│       └── Build-AgentPacket.ps1 # 에이전트 브리프 패킷 조립
 ├── templates/               # 문서 템플릿
 │   ├── *.hwpx               # 한글 서식
 │   ├── irac_prompt.md        # IRAC 분석 프롬프트
@@ -77,6 +81,7 @@ labor-automation/
 - 실행: `python -m pytest scripts/legal-hub/ -v`
 - 새 함수 추가 시 반드시 테스트 동반
 - render_docx.py 변경 시 기존 18개 테스트 전부 통과 확인
+- 전체 테스트: 39 passed (render_docx 18 + render_hwpx 14 + prepare_case_data 7)
 
 ## 커밋 규칙
 - 형식: `feat:`, `fix:`, `docs:`, `test:`, `refactor:`
@@ -99,10 +104,10 @@ python -m pytest scripts/legal-hub/ -v
 python scripts/legal-hub/render_docx.py {사건폴더} --input 03_drafts/draft.md
 
 # 사건 폴더 생성
-powershell -File scripts/legal-workflow/New-LegalCase.ps1 -MatterId "CASE-001" -ClientName "홍길동"
+powershell -File scripts/legal-workflow/New-LegalCase.ps1 -CaseId "CASE-001" -Title "홍길동"
 
 # /chrome 세션 로그 기록
-python scripts/legal-hub/chrome_log.py {사건폴더} --platform lbox --action search --query "부당해고"
+python scripts/legal-hub/chrome_log.py {사건폴더} lbox search --query "부당해고"
 ```
 
 ## 3플랫폼 연동 참조
