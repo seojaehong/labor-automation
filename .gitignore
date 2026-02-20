@@ -17,6 +17,11 @@ Thumbs.db
 .vscode/
 .idea/
 
+# Claude Code session data
+.claude/
+docs/.pdca-snapshots/
+docs/.bkit-memory.json
+
 # Sensitive files
 *.xlsx
 
