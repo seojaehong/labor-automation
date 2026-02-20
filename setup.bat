@@ -1,59 +1,56 @@
 @echo off
 setlocal EnableDelayedExpansion
-chcp 65001 >nul 2>&1
 
 echo ============================================================
 echo  labor-automation setup
 echo ============================================================
 echo.
 
-:: ── Python 확인 ──────────────────────────────────────────────
+:: Check Python
 python --version >nul 2>&1
 if errorlevel 1 (
-    echo [ERROR] Python을 찾을 수 없습니다.
-    echo         https://www.python.org 에서 Python 3.11 이상을 설치하세요.
-    pause & exit /b 1
+    echo [ERROR] Python not found. Install Python 3.11+ from https://www.python.org
+    exit /b 1
 )
 for /f "tokens=2" %%v in ('python --version 2^>^&1') do set PY_VER=%%v
 echo [OK] Python %PY_VER%
 
-:: ── pip 의존성 설치 ───────────────────────────────────────────
+:: Install dependencies
 echo.
-echo [1/3] 의존성 설치 중...
+echo [1/3] Installing dependencies...
 python -m pip install --upgrade pip -q
 python -m pip install -r scripts\legal-hub\requirements.txt -q
 if errorlevel 1 (
-    echo [ERROR] pip install 실패
-    pause & exit /b 1
+    echo [ERROR] pip install failed
+    exit /b 1
 )
-echo [OK] 의존성 설치 완료
+echo [OK] Dependencies installed
 
-:: ── 단위 테스트 ──────────────────────────────────────────────
+:: Unit tests
 echo.
-echo [2/3] 단위 테스트 실행 중...
-python -m pytest scripts\legal-hub\ -v --tb=short -q
+echo [2/3] Running unit tests...
+python -m pytest scripts\legal-hub\ --tb=short -q
 if errorlevel 1 (
-    echo [WARN] 단위 테스트 일부 실패 — 계속 진행합니다.
+    echo [WARN] Some unit tests failed
 ) else (
-    echo [OK] 단위 테스트 전체 통과
+    echo [OK] All unit tests passed
 )
 
-:: ── E2E 테스트 ───────────────────────────────────────────────
+:: E2E tests
 echo.
-echo [3/3] E2E 체인 테스트 실행 중...
+echo [3/3] Running E2E cowork chain test...
 set OUTPUT_DIR=C:\dev\output\labor-automation-e2e
 python scripts\legal-hub\e2e_cowork_chain.py --output-dir "%OUTPUT_DIR%"
 if errorlevel 1 (
-    echo [ERROR] E2E 테스트 실패
-    pause & exit /b 1
+    echo [ERROR] E2E test failed
+    exit /b 1
 )
-echo [OK] E2E 완료
+echo [OK] E2E passed
 
-:: ── 완료 ─────────────────────────────────────────────────────
+:: Done
 echo.
 echo ============================================================
-echo  설치 및 검증 완료
-echo  결과물: %OUTPUT_DIR%
+echo  Setup complete. Results: %OUTPUT_DIR%
 echo ============================================================
 echo.
-pause
+exit /b 0
