@@ -1,10 +1,10 @@
 # 테스트 결과보고서: Legal AI Hybrid Workflow
 
 > **Feature**: legal-ai-hybrid-workflow
-> **테스트 일시**: 2026-02-20 (최종 갱신)
+> **테스트 일시**: 2026-02-20 (최종 갱신 19:30 KST)
 > **테스트 환경**: Windows 11 Home, Python 3.13.3, pytest 9.0.2, Claude Code v2.1.47
-> **테스트 범위**: Process B (로컬 허브) + Process A 환경 검증
-> **최신 커밋**: `c4f9664` — render_docx.py 테이블/각주 지원 + 개발원칙 수립
+> **테스트 범위**: Process A (/chrome 3플랫폼) + Process B (로컬 허브) 전체
+> **최신 커밋**: `1d6a8a6` — P0/P1 완료 (HWPX E2E + watch_inbox 실운영 + Phase4 문서)
 
 ---
 
@@ -22,7 +22,7 @@ Design v2 §12에 정의된 단위 테스트 및 통합 테스트를 실행하�
 | Chrome Native Messaging Host | `com.anthropic.claude_browser_extension` 등록됨 | PASS |
 | Edge Native Messaging Host | `com.anthropic.claude_browser_extension` 등록됨 | PASS |
 | 실제 /chrome 연결 테스트 | **연결 성공** (별도 세션에서 확인) | **PASS** |
-| 대상 플랫폼 | 엘박스, 슈퍼로이어, 빅케이스 (3개) | 테스트 중 |
+| 대상 플랫폼 | 엘박스, 슈퍼로이어, 빅케이스 (3개) | **PASS** (e2e-research-docx-test.md 증적) |
 
 ### Python 의존성
 
@@ -62,7 +62,8 @@ Design v2 §12에 정의된 단위 테스트 및 통합 테스트를 실행하�
 
 ## 4-1. render_docx.py 테이블/각주 pytest 결과
 
-> 커밋 `c4f9664` 기준, 18 passed / 0 failed (0.28s)
+> 커밋 `1d6a8a6` 기준, **39 passed** / 0 failed
+> - render_docx: 18개 / render_hwpx: 14개 / prepare_case_data: 7개
 
 | 테스트 클래스 | 테스트명 | 판정 |
 |---------------|----------|------|
@@ -85,16 +86,16 @@ Design v2 §12에 정의된 단위 테스트 및 통합 테스트를 실행하�
 | TestEdgeCases | test_pipe_in_code_not_parsed_as_table | PASS |
 | TestEdgeCases | test_colon_alignment_separators | PASS |
 
-**코드 트랙 상태**: 18 pass / 0 fail — 게이트 충족
+**코드 트랙 상태**: 39 pass / 0 fail — 게이트 충족
 
 ## 5. 통합 테스트 결과
 
 | ID | 시나리오 | 결과 | 비고 |
 |----|----------|------|------|
-| IT-01 | (판례 검색 → 마크다운) | PENDING | /chrome 필요 |
-| IT-02 | (판례 → IRAC → hwpx) | PENDING | /chrome 필요 |
+| IT-01 | 판례 검색 → 마크다운 | **PASS** | 3플랫폼 E2E (e2e-research-docx-test.md, Run #1) |
+| IT-02 | 판례 → IRAC → hwpx | **PASS** | prepare_case_data → render_hwpx, 3,448 bytes (e2e-research-hwpx-test.md) |
 | IT-03 | PDF → 근거카드 → 초안 → DOCX | **PASS** | Process B 전체 파이프라인 동작 확인 |
-| IT-04 | (전체 파이프라인 실제 사건) | PENDING | /chrome + 엘박스 실제 테스트 필요 |
+| IT-04 | 전체 파이프라인 실전 사건 | **PASS** | 부당해고 구제신청 E2E 풀사이클 완료 (2026-02-20) |
 
 ### IT-03 상세 실행 흐름
 
@@ -130,8 +131,8 @@ Design v2 §12에 정의된 단위 테스트 및 통합 테스트를 실행하�
 |---|--------|------|------|
 | 1 | Low | PyMuPDF 폰트 매핑 시 `Skipping broken line` 경고 다수 출력 (기능에 영향 없음) | 수용 |
 | 2 | Info | Windows cp949 인코딩 환경에서 이모지 출력 시 UnicodeEncodeError | 회피 (이모지 미사용) |
-| 3 | Medium | /chrome 실제 연결 테스트 미완 (별도 세션 필요) | PENDING |
-| 4 | Info | hwpx 템플릿은 한글 프로그램에서 수동 생성 필요 (프로그래밍 생성 불가) | 설계대로 |
+| 3 | Medium | /chrome 실제 연결 테스트 | **PASS** (3플랫폼 E2E 검증 완료) |
+| 4 | Info | hwpx 템플릿 — 실서식은 한글 프로그램에서 수동 제작 필요 | 단기 잔여 (사용자 담당) |
 
 ## 8. 산출물 목록
 
@@ -147,6 +148,10 @@ Design v2 §12에 정의된 단위 테스트 및 통합 테스트를 실행하�
 | 8 | `templates/rescue_application_data.example.json` | **신규** (hwpx 데이터 예시) |
 | 9 | `templates/README.md` | **신규** (템플릿 사용 가이드) |
 | 10 | `scripts/legal-hub/test_render_docx.py` | **신규** (render_docx 18개 테스트) |
+| 11 | `scripts/legal-hub/test_render_hwpx.py` | **신규** (render_hwpx 14개 테스트) |
+| 12 | `scripts/legal-hub/prepare_case_data.py` | **신규** (IRAC 데이터 주입) |
+| 13 | `scripts/legal-hub/test_prepare_case_data.py` | **신규** (7개 테스트) |
+| 14 | `templates/tmpl_rescue_application.hwpx` | **신규** (구제신청서 최소 HWPX 템플릿) |
 
 ## 9. 결론 및 권고사항
 
@@ -154,15 +159,16 @@ Design v2 §12에 정의된 단위 테스트 및 통합 테스트를 실행하�
 
 Process B (로컬 허브) 파이프라인은 **모든 단위 테스트를 통과**하며, IT-03 통합 테스트(PDF → 근거카드 → IRAC 초안 → DOCX/hwpx)도 정상 동작 확인됨.
 
-Process A (/chrome)는 **환경 준비 완료** (Claude Code v2.1.47, Native Messaging Host 등록) 상태이며, 별도 세션에서 실제 연결 테스트가 필요함.
+Process A (/chrome)는 **3플랫폼 E2E 검증 완료** (부당해고 구제신청 + 임금체불 진정 2건). Process B 로컬 허브 전체 파이프라인 39 passed.
 
 ### 개발원칙
 
 `CLAUDE.md`가 개발원칙 문서를 겸함 (TDD 필수, Simplicity First, Surgical Changes, 커밋 규칙, 테스트 규칙 등 포함). 별도 파일 불필요.
 
-### 권고사항
+### 잔여 항목 (2026-02-20 기준)
 
-1. **즉시**: `claude --chrome` 별도 세션에서 엘박스 접근 테스트 실행
-2. **단기**: 한글 프로그램에서 구제신청서 hwpx 템플릿 제작 → `templates/` 배치
-3. **중기**: Cowork 연동 (Phase 3) 및 강의 콘텐츠 패키징 (Phase 4)
-4. **분기**: 엘박스/슈퍼로이어 공식 API/MCP 지원 모니터링
+| 우선순위 | 항목 | 담당 |
+|----------|------|------|
+| 단기 | hwpx 실서식 템플릿 제작 (한글 프로그램 수동) | 사용자 |
+| 중기 | Cowork 연동 (Phase 3) | 미정 |
+| 분기 | 엘박스/슈퍼로이어 공식 API/MCP 모니터링 | 미정 |
