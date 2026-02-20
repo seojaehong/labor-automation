@@ -87,6 +87,17 @@ python scripts/legal-hub/render_hwpx.py \
 
 Requires a template hwpx created in Hangul with `{{placeholder}}` tokens.
 
+## 8) Generate template test documents (MD + HWPX)
+
+```bash
+python scripts/legal-hub/generate_template_test_docs.py \
+  --templates templates \
+  --output C:/dev/output/labor-automation-template-tests
+```
+
+Creates rendered test files for rescue application, employment contract, and wage complaint.
+Also generates HWPX outputs for all three document types and a result report.
+
 ## Notes
 
 - For scanned PDF, OCR may still be required.
