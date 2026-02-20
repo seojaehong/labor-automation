@@ -11,11 +11,19 @@ try:
     from docx import Document
     from docx.enum.text import WD_ALIGN_PARAGRAPH
     from docx.oxml.ns import qn
-    from docx.shared import Cm, Pt
+    from docx.shared import Cm, Pt, RGBColor
 except ImportError as exc:  # pragma: no cover
     raise SystemExit(
         "python-docx is required. Install with: pip install python-docx"
     ) from exc
+
+# Regex for footnote reference [^1] and definition [^1]: text
+_FOOTNOTE_REF_RE = re.compile(r"\[\^(\w+)\]")
+_FOOTNOTE_DEF_RE = re.compile(r"^\[\^(\w+)\]:\s+(.+)$")
+# Regex for table row: | col | col | (must start and end with |)
+_TABLE_ROW_RE = re.compile(r"^\|(.+)\|$")
+# Regex for separator row: |---|---| or |:---:|:---|
+_TABLE_SEP_RE = re.compile(r"^\|[\s:]*-{3,}[\s:]*(\|[\s:]*-{3,}[\s:]*)*\|$")
 
 
 def parse_args() -> argparse.Namespace:
@@ -83,32 +91,170 @@ def add_list_item(doc: Document, text: str, numbered: bool) -> None:
     add_runs_with_bold(paragraph, text.strip())
 
 
+# ── Table support ────────────────────────────────────────────
+
+
+def _parse_table_cells(row_text: str) -> list[str]:
+    """Split a pipe-delimited row into cell texts, stripping whitespace."""
+    # Remove leading/trailing pipes, then split by |
+    inner = row_text.strip().strip("|")
+    return [cell.strip() for cell in inner.split("|")]
+
+
+def add_table(doc: Document, headers: list[str], rows: list[list[str]]) -> None:
+    """Add a styled table to the document."""
+    n_cols = len(headers)
+    table = doc.add_table(rows=1 + len(rows), cols=n_cols)
+    table.style = "Table Grid"
+
+    # Header row
+    for i, header in enumerate(headers):
+        para = table.cell(0, i).paragraphs[0]
+        para.clear()
+        run = para.add_run(header)
+        run.bold = True
+
+    # Data rows
+    for row_idx, row_data in enumerate(rows):
+        for col_idx in range(n_cols):
+            cell_text = row_data[col_idx] if col_idx < len(row_data) else ""
+            para = table.cell(row_idx + 1, col_idx).paragraphs[0]
+            para.clear()
+            add_runs_with_bold(para, cell_text)
+
+
+# ── Footnote support ─────────────────────────────────────────
+
+
+def collect_footnote_defs(lines: list[str]) -> dict[str, str]:
+    """Scan lines for [^key]: definition and return {key: text} map."""
+    defs: dict[str, str] = {}
+    for line in lines:
+        m = _FOOTNOTE_DEF_RE.match(line.strip())
+        if m:
+            defs[m.group(1)] = m.group(2)
+    return defs
+
+
+def add_footnote_paragraph(doc: Document, text: str, fn_defs: dict[str, str]) -> None:
+    """Add a paragraph with [^N] replaced by superscript numbers."""
+    paragraph = doc.add_paragraph()
+    paragraph.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
+
+    # Split text around footnote refs
+    parts = _FOOTNOTE_REF_RE.split(text)
+    # parts alternates: text, key, text, key, ...
+    for i, part in enumerate(parts):
+        if i % 2 == 0:
+            # Normal text segment — handle **bold**
+            if part:
+                add_runs_with_bold(paragraph, part)
+        else:
+            # Footnote key — render as superscript
+            run = paragraph.add_run(f"{part})")
+            run.font.superscript = True
+            run.font.size = Pt(9)
+            run.font.color.rgb = RGBColor(0x00, 0x00, 0x99)
+
+
+def _is_table_row(line: str) -> bool:
+    """Check if a line looks like a markdown table row (not code with pipes)."""
+    stripped = line.strip()
+    if not _TABLE_ROW_RE.match(stripped):
+        return False
+    # Exclude lines that are inside backtick code spans
+    # Simple heuristic: if backticks wrap the pipes, it's code
+    if stripped.startswith("`") or stripped.count("`") >= 2:
+        no_code = re.sub(r"`[^`]+`", "", stripped)
+        return bool(_TABLE_ROW_RE.match(no_code.strip()))
+    return True
+
+
 def render_markdown(doc: Document, markdown_text: str) -> None:
-    for raw_line in markdown_text.splitlines():
-        line = raw_line.rstrip()
+    lines = markdown_text.splitlines()
+    fn_defs = collect_footnote_defs(lines)
+    has_footnotes = bool(fn_defs)
+
+    i = 0
+    while i < len(lines):
+        line = lines[i].rstrip()
         stripped = line.strip()
 
-        if not stripped:
-            doc.add_paragraph()
+        # Skip footnote definition lines (rendered at end)
+        if _FOOTNOTE_DEF_RE.match(stripped):
+            i += 1
             continue
 
+        # Empty line
+        if not stripped:
+            doc.add_paragraph()
+            i += 1
+            continue
+
+        # ── Table block ──
+        if _is_table_row(stripped):
+            # Collect consecutive table lines
+            table_lines: list[str] = []
+            while i < len(lines) and _is_table_row(lines[i].rstrip()):
+                table_lines.append(lines[i].rstrip().strip())
+                i += 1
+            # Also grab separator if next
+            if i < len(lines) and _TABLE_SEP_RE.match(lines[i].strip()):
+                table_lines.append(lines[i].rstrip().strip())
+                i += 1
+                while i < len(lines) and _is_table_row(lines[i].rstrip()):
+                    table_lines.append(lines[i].rstrip().strip())
+                    i += 1
+
+            # Parse: first line = headers, skip separator, rest = data
+            headers = _parse_table_cells(table_lines[0])
+            rows: list[list[str]] = []
+            for tl in table_lines[1:]:
+                if _TABLE_SEP_RE.match(tl):
+                    continue
+                rows.append(_parse_table_cells(tl))
+            add_table(doc, headers, rows)
+            continue
+
+        # ── Heading ──
         heading_match = re.match(r"^(#{1,3})\s+(.*)$", stripped)
         if heading_match:
             level = len(heading_match.group(1))
             add_heading(doc, heading_match.group(2), level)
+            i += 1
             continue
 
+        # ── Bullet list ──
         bullet_match = re.match(r"^[-*]\s+(.*)$", stripped)
         if bullet_match:
             add_list_item(doc, bullet_match.group(1), numbered=False)
+            i += 1
             continue
 
+        # ── Numbered list ──
         number_match = re.match(r"^\d+\.\s+(.*)$", stripped)
         if number_match:
             add_list_item(doc, number_match.group(1), numbered=True)
+            i += 1
             continue
 
-        add_plain_paragraph(doc, stripped)
+        # ── Plain paragraph (with footnote support) ──
+        if has_footnotes and _FOOTNOTE_REF_RE.search(stripped):
+            add_footnote_paragraph(doc, stripped, fn_defs)
+        else:
+            add_plain_paragraph(doc, stripped)
+        i += 1
+
+    # ── Append footnote section at end ──
+    if fn_defs:
+        doc.add_paragraph()
+        add_heading(doc, "주석", 3)
+        for key, text in fn_defs.items():
+            para = doc.add_paragraph()
+            ref_run = para.add_run(f"{key}) ")
+            ref_run.font.superscript = True
+            ref_run.font.size = Pt(9)
+            add_runs_with_bold(para, text)
 
 
 def main() -> int:

@@ -4,6 +4,11 @@
 # Node
 node_modules/
 
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/
+
 # OS
 .DS_Store
 Thumbs.db
@@ -11,6 +16,9 @@ Thumbs.db
 # Editor
 .vscode/
 .idea/
+
+# Sensitive files
+*.xlsx
 
 # Local legal case data (sensitive)
 cases/
