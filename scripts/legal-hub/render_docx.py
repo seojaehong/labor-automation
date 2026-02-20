@@ -73,6 +73,7 @@ def add_runs_with_bold(paragraph, text: str) -> None:
 
 def add_plain_paragraph(doc: Document, text: str) -> None:
     paragraph = doc.add_paragraph()
+    paragraph.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
     add_runs_with_bold(paragraph, text.strip())
 
 

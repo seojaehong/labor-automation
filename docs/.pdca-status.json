@@ -1,17 +1,18 @@
 {
   "version": "2.0",
   "lastUpdated": "2026-02-20T00:00:00.000Z",
-  "activeFeatures": ["legal-ai-hybrid-workflow"],
-  "primaryFeature": "legal-ai-hybrid-workflow",
+  "activeFeatures": [],
+  "primaryFeature": null,
   "features": {
     "legal-ai-hybrid-workflow": {
-      "phase": "check",
-      "planPath": "docs/01-plan/features/legal-ai-hybrid-workflow.plan.md",
-      "designPath": "docs/02-design/features/legal-ai-hybrid-workflow.design.md",
-      "analysisPath": null,
-      "reportPath": null,
-      "matchRate": null,
-      "iterations": 0
+      "phase": "archived",
+      "planPath": "docs/archive/2026-02/legal-ai-hybrid-workflow/legal-ai-hybrid-workflow.plan.md",
+      "designPath": "docs/archive/2026-02/legal-ai-hybrid-workflow/legal-ai-hybrid-workflow.design.md",
+      "analysisPath": "docs/archive/2026-02/legal-ai-hybrid-workflow/legal-ai-hybrid-workflow.analysis.md",
+      "reportPath": "docs/archive/2026-02/legal-ai-hybrid-workflow/legal-ai-hybrid-workflow.report.md",
+      "archivedTo": "docs/archive/2026-02/legal-ai-hybrid-workflow/",
+      "matchRate": 90,
+      "iterations": 1
     }
   },
   "pipeline": {
@@ -30,6 +31,24 @@
       "feature": "legal-ai-hybrid-workflow",
       "timestamp": "2026-02-20T00:00:00.000Z",
       "note": "v2 Plan: /chrome integration + 바이브코딩 스펙 + Process B 참조 반영"
+    },
+    {
+      "action": "gap-analysis",
+      "feature": "legal-ai-hybrid-workflow",
+      "timestamp": "2026-02-20T00:00:00.000Z",
+      "note": "Gap Analysis: 86% -> 90% (즉시 조치 4건 반영)"
+    },
+    {
+      "action": "report-completed",
+      "feature": "legal-ai-hybrid-workflow",
+      "timestamp": "2026-02-20T00:00:00.000Z",
+      "note": "PDCA Report 완료: 90% Match Rate, Phase 2 완료"
+    },
+    {
+      "action": "archived",
+      "feature": "legal-ai-hybrid-workflow",
+      "timestamp": "2026-02-20T00:00:00.000Z",
+      "note": "PDCA 문서 아카이브: docs/archive/2026-02/legal-ai-hybrid-workflow/"
     }
   ]
 }

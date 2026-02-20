@@ -39,6 +39,7 @@ $directories = @(
     "02_research",
     "03_platform_exports\lbox",
     "03_platform_exports\superlawyer",
+    "03_platform_exports\bigcase",
     "03_platform_exports\other",
     "04_authority_notes",
     "05_drafts",
@@ -59,6 +60,7 @@ owner: ""
 platforms:
   - lbox
   - superlawyer
+  - bigcase
 notes: ""
 "@
 

@@ -144,11 +144,14 @@ claude --chrome  # 또는 세션 내 /chrome
 
 | 파일 | 역할 | 의존성 |
 |------|------|--------|
-| `01_setup_matter.py` | 사건 폴더 스캐폴딩 | (없음) |
-| `02_watchdog_indexer.py` | `00_inbox/` 감시 → PDF 텍스트 추출 | watchdog, PyMuPDF |
-| `03_docx_builder.py` | `05_drafts/draft.md` → 법원 규격 DOCX | python-docx |
+| `scaffold_hub.py` | 사건 폴더 스캐폴딩 | (없음) |
+| `build_matter_pack.py` | PDF 텍스트 추출 → 근거카드 생성 | pypdf, PyMuPDF |
+| `watch_inbox.py` | `00_inbox/` 감시 → 자동 카드 생성 | watchdog |
+| `render_docx.py` | `03_drafts/draft.md` → 법원 규격 DOCX | python-docx |
+| `render_hwpx.py` | hwpx 템플릿 렌더링 | (없음) |
+| `chrome_log.py` | /chrome 세션 활동 로그 | (없음) |
 | `requirements.txt` | 의존성 선언 | pip |
-| `.cursorrules` | AI 에이전트 통제 규칙 | AI 에디터 |
+| `.cursorrules` | AI 에이전트 통제 규칙 (scaffold_hub.py가 생성) | AI 에디터 |
 
 ### 4.2 데이터 흐름
 
@@ -377,6 +380,7 @@ cases/{CASE_ID}/
 ├─ 03_platform_exports/
 │   ├─ lbox/                   # 엘박스 수집 자료
 │   ├─ superlawyer/            # 슈퍼로이어 수집 자료
+│   ├─ bigcase/                # 빅케이스 수집 자료
 │   └─ other/                  # 기타
 ├─ 04_authority_notes/
 │   └─ authority-notes.md      # 판례 적용 포인트
@@ -387,7 +391,8 @@ cases/{CASE_ID}/
 │   ├─ *.hwpx                  # 최종 hwpx
 │   └─ *.docx                  # 최종 DOCX
 └─ 07_audit/
-    ├─ import-log.csv          # SHA-256 감사 로그
+    ├─ import-log.csv          # SHA-256 감사 로그 (Process C)
+    ├─ chrome-session-log.csv  # /chrome 자동화 세션 로그 (Process A)
     └─ review-checklist.md     # 사람 검수 체크리스트
 ```
 
@@ -398,8 +403,8 @@ MATTERS/{사건명}/
 ├─ 00_inbox/                   # 다운로드 수집함 (watchdog 감시)
 ├─ 01_sources/                 # 의뢰인 증거자료
 ├─ 02_notes/
-│   ├─ 사건팩_MatterPack.md    # 사건 전체 요약
-│   └─ *_근거카드.md           # 개별 판례 텍스트
+│   ├─ matter-pack.md          # 사건 전체 요약
+│   └─ cards/*_근거카드.md     # 개별 판례 텍스트 (하위 폴더)
 ├─ 03_drafts/
 │   └─ draft.md                # AI 작성 초안
 ├─ 04_final/
@@ -524,7 +529,36 @@ log_entry = {
 # → 07_audit/import-log.csv에 append
 ```
 
-### 11.2 IRAC 입출력 인터페이스
+### 11.2 /chrome 세션 로그 인터페이스
+
+```
+# chrome-session-log.csv 스키마 (scripts/legal-hub/chrome_log.py)
+fieldnames = [
+    "timestamp_utc",     # ISO 8601
+    "platform",          # lbox | superlawyer | bigcase | other
+    "action",            # search | ai_query | extract | save | navigate | error
+    "url",               # 접근한 URL
+    "query",             # 검색어 또는 질의문
+    "result_count",      # 검색 결과 수
+    "extracted_chars",   # 추출된 텍스트 길이
+    "saved_file",        # 저장된 파일 상대 경로
+    "sha256",            # 추출 콘텐츠 해시
+    "note",              # 비고
+]
+
+# 사용 예시 (Process A 자동화 스크립트에서 호출)
+from scripts.legal_hub.chrome_log import append_log
+append_log(
+    case_path=Path("cases/2026-LA-001"),
+    platform="lbox",
+    action="search",
+    url="https://lbox.kr/v2/search/case?query=...",
+    query="부당해고 근로기준법",
+    result_count=9867,
+)
+```
+
+### 11.3 IRAC 입출력 인터페이스
 
 ```
 # 입력
@@ -553,7 +587,7 @@ irac_output = {
 }
 ```
 
-### 11.3 hwpx 템플릿 인터페이스
+### 11.4 hwpx 템플릿 인터페이스
 
 ```
 # 템플릿 placeholder 규약
@@ -566,6 +600,8 @@ placeholders = {
     "{{청구취지}}": str,
     "{{신청이유_IRAC}}": str,      # IRAC 분석 전문 (마크다운 → XML 변환)
     "{{첨부서류_목록}}": str,
+    "{{신청인_연락처}}": str,
+    "{{피신청인_대표자}}": str,
     "{{신청일자}}": str,           # YYYY. M. D.
     "{{노동위원회_명칭}}": str     # "XX지방노동위원회"
 }
@@ -641,14 +677,18 @@ placeholders = {
 
 | # | 파일 | 프로세스 | 상태 |
 |---|------|----------|------|
-| 1 | `scripts/legal-workflow/New-LegalCase.ps1` | C | 기존 완료 |
-| 2 | `scripts/legal-workflow/Import-LegalExports.ps1` | C | 기존 완료 |
+| 1 | `scripts/legal-workflow/New-LegalCase.ps1` | C | 기존 (bigcase 추가) |
+| 2 | `scripts/legal-workflow/Import-LegalExports.ps1` | C | 기존 (bigcase 추가) |
 | 3 | `scripts/legal-workflow/Build-AgentPacket.ps1` | C | 기존 완료 |
-| 4 | `scripts/legal-hub/01_setup_matter.py` | B | 신규 |
-| 5 | `scripts/legal-hub/02_watchdog_indexer.py` | B | 신규 |
-| 6 | `scripts/legal-hub/03_docx_builder.py` | B | 신규 |
-| 7 | `scripts/legal-hub/requirements.txt` | B | 신규 |
-| 8 | `.cursorrules` | B | 신규 |
-| 9 | `templates/tmpl_rescue_application.hwpx` | A | 신규 |
-| 10 | `templates/irac_prompt.md` | A, B | 신규 |
-| 11 | `docs/04-report/test-report-legal-ai-workflow.md` | All | 신규 |
+| 4 | `scripts/legal-hub/scaffold_hub.py` | B | 기존 완료 |
+| 5 | `scripts/legal-hub/build_matter_pack.py` | B | 기존 완료 |
+| 6 | `scripts/legal-hub/render_docx.py` | B | 기존 (**bold** 파싱 추가) |
+| 7 | `scripts/legal-hub/watch_inbox.py` | B | 신규 완료 |
+| 8 | `scripts/legal-hub/render_hwpx.py` | A, B | 신규 완료 |
+| 9 | `scripts/legal-hub/chrome_log.py` | A | 신규 완료 |
+| 10 | `scripts/legal-hub/requirements.txt` | B | 기존 (watchdog 추가) |
+| 11 | `templates/irac_prompt.md` | A, B | 신규 완료 |
+| 12 | `templates/rescue_application_data.example.json` | A | 신규 완료 |
+| 13 | `templates/tmpl_rescue_application.hwpx` | A | 미구현 (한글에서 수동 생성 필요) |
+| 14 | `docs/04-report/test-report-legal-ai-workflow.md` | All | 신규 완료 |
+| 15 | `docs/04-report/chrome-automation-test-log.md` | A | 신규 완료 |
